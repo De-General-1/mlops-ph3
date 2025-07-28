@@ -1,0 +1,72 @@
+name: Inference CI
+on:
+  push:
+    branches:
+      - api/inference
+  pull_request:
+    branches:
+      - api/inference
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+
+      # - name: Install dependencies
+      #   run: make install
+
+      # - name: Source venv
+      #   run: source venv/bin/activate
+
+      # - name: Run Tests
+      #   run: make test
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+
+      # - name: Install dependencies for compilation
+      #   run: make install
+
+      # - name: Source venv && Run Compile Step
+      #   run: source venv/bin/activate && make compile
+
+      - name: Build and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: mlops/infer
+          IMAGE_TAG: v-${{ github.sha }}
+        run: |
+          IMAGE_TAG="v-$(echo ${{ github.sha }} | cut -c1-7)"
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Docker/InferenceAPI_Dockerfile .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest 
+
+
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest

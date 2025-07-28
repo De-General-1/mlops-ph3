@@ -1,0 +1,30 @@
+# Use a lightweight Python base image
+FROM python:3.12
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the requirements file into the container
+# This allows Docker to cache the dependency installation layer
+COPY requirements.txt .
+
+# Install Python dependencies
+# --no-cache-dir: Prevents pip from saving downloaded packages, reducing image size
+# -r requirements.txt: Installs all packages listed in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy your FastAPI application code
+# This assumes your FastAPI app is in a directory named 'api'
+COPY inference_api.py .
+
+
+# Expose the port that your FastAPI application will listen on
+# This informs Docker that the container listens on the specified network ports at runtime.
+EXPOSE 8000
+
+# Define the command to run your FastAPI application using Uvicorn
+# This is the default command that will be executed when the container starts.
+# --host 0.0.0.0: Makes the server accessible from outside the container.
+# --port 8000: Specifies the port the application listens on.
+# api.inference_api:app: Points Uvicorn to your FastAPI application instance.
+CMD ["uvicorn", "inference_api:app", "--host", "0.0.0.0", "--port", "8000"]

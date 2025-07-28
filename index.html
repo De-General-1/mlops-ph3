@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie AI Services</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300"
+  >
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-white dark:bg-gray-800 shadow-md flex flex-col">
+        <div class="p-4 text-xl font-bold">Movie AI</div>
+        <nav class="flex-1 p-4 space-y-2">
+          <button
+            id="nav-generate"
+            class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
+            Generate
+          </button>
+          <button
+            id="nav-recommend"
+            class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
+            Recommend
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 flex flex-col">
+        <!-- Header -->
+        <header
+          class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700"
+        >
+          <h1 class="text-2xl font-bold">Mov Flan</h1>
+          <button
+            id="theme-toggle"
+            class="px-3 py-2 rounded bg-gray-300 dark:bg-gray-700"
+          >
+            Toggle Theme
+          </button>
+        </header>
+
+        <!-- Content Sections -->
+        <section
+          id="generate-section"
+          class="flex-1 flex flex-col p-4 space-y-4"
+        >
+          <h2 class="text-xl font-semibold">Generate a Movie Title</h2>
+          <div
+            id="chat-generate"
+            class="flex-1 overflow-y-auto p-4 border rounded bg-white dark:bg-gray-800 space-y-2"
+          >
+            <!-- Pre-populated messages -->
+          </div>
+          <div class="flex space-x-2">
+            <textarea
+              id="description"
+              rows="2"
+              placeholder="Enter movie description..."
+              class="flex-1 p-2 border rounded dark:bg-gray-700"
+            ></textarea>
+            <button
+              onclick="generateTitle()"
+              class="px-4 py-2 bg-blue-600 text-white rounded"
+            >
+              Send
+            </button>
+          </div>
+        </section>
+
+        <section
+          id="recommend-section"
+          class="flex-1 flex-col p-4 space-y-4 hidden"
+        >
+          <h2 class="text-xl font-semibold">Recommend Movies</h2>
+          <div
+            id="chat-recommend"
+            class="flex-1 overflow-y-auto p-4 border rounded bg-white dark:bg-gray-800 space-y-2"
+          >
+            <!-- Pre-populated messages -->
+          </div>
+          <div class="flex space-x-2">
+            <input
+              id="movie-title"
+              type="text"
+              placeholder="Enter movie title..."
+              class="flex-1 p-2 border rounded dark:bg-gray-700"
+            />
+            <input
+              id="num-recommendations"
+              type="number"
+              min="1"
+              value="5"
+              class="w-24 p-2 border rounded dark:bg-gray-700"
+            />
+            <button
+              onclick="recommendMovie()"
+              class="px-4 py-2 bg-blue-600 text-white rounded"
+            >
+              Send
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      // Dark mode toggle
+      const themeToggle = document.getElementById("theme-toggle");
+      const userTheme = localStorage.getItem("theme");
+      if (userTheme === "dark") document.documentElement.classList.add("dark");
+      themeToggle.addEventListener("click", () => {
+        document.documentElement.classList.toggle("dark");
+        localStorage.setItem(
+          "theme",
+          document.documentElement.classList.contains("dark") ? "dark" : "light"
+        );
+      });
+
+      // Sidebar navigation
+      const generateSection = document.getElementById("generate-section");
+      const recommendSection = document.getElementById("recommend-section");
+      document.getElementById("nav-generate").addEventListener("click", () => {
+        generateSection.classList.remove("hidden");
+        recommendSection.classList.add("hidden");
+      });
+      document.getElementById("nav-recommend").addEventListener("click", () => {
+        recommendSection.classList.remove("hidden");
+        generateSection.classList.add("hidden");
+      });
+
+      // Pre-populated chat data
+      const chatGenerate = [
+        { sender: "user", text: "A fantasy movie about dragons and knights." },
+        { sender: "ai", text: 'How about "Dragons of the Silver Keep"?' },
+      ];
+      const chatRecommend = [
+        { sender: "user", text: "Recommend movies like Inception." },
+        {
+          sender: "ai",
+          text: "Here are some: Interstellar, Shutter Island, Tenet.",
+        },
+      ];
+
+      function renderChat(containerId, messages) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        messages.forEach((msg) => {
+          const div = document.createElement("div");
+          div.className = `p-2 rounded max-w-lg ${
+            msg.sender === "user"
+              ? "bg-blue-200 dark:bg-blue-700 self-end"
+              : "bg-gray-200 dark:bg-gray-600 self-start"
+          }`;
+          div.innerText = msg.text;
+          container.appendChild(div);
+        });
+      }
+      renderChat("chat-generate", chatGenerate);
+      renderChat("chat-recommend", chatRecommend);
+
+      // API calls with chat updates
+      async function generateTitle() {
+        const desc = document.getElementById("description").value;
+        chatGenerate.push({ sender: "user", text: desc });
+        renderChat("chat-generate", chatGenerate);
+        const res = await fetch("/generate_title", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description: desc }),
+        });
+        const data = await res.json();
+        chatGenerate.push({
+          sender: "ai",
+          text: data.suggested_title || data.detail || "Error",
+        });
+        renderChat("chat-generate", chatGenerate);
+      }
+
+      async function recommendMovie() {
+        const title = document.getElementById("movie-title").value;
+        const num = document.getElementById("num-recommendations").value;
+        chatRecommend.push({
+          sender: "user",
+          text: `${title} (${num} recommendations)`,
+        });
+        renderChat("chat-recommend", chatRecommend);
+        const res = await fetch("/recommend_movie", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            movie_title: title,
+            num_recommendations: parseInt(num),
+          }),
+        });
+        const data = await res.json();
+        chatRecommend.push({
+          sender: "ai",
+          text: data.recommended_movies
+            ? data.recommended_movies.join(", ")
+            : data.detail || "Error",
+        });
+        renderChat("chat-recommend", chatRecommend);
+      }
+    </script>
+  </body>
+</html>
