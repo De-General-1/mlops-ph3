@@ -1,22 +1,35 @@
-torch
+# Core ML libraries
 transformers
-sentence-transformers
-scikit-learn
-pandas
-numpy
-fastapi
-uvicorn
-pylint
 datasets
-accelerate
-pydantic
-mlflow
-python-dotenv
+tensorflow # Use 'tensorflow-gpu' if you have a compatible NVIDIA GPU and CUDA setup
+# sentence-transformers # Keep if you plan to use it later, but not strictly needed for FLAN-T5 fine-tuning
+scikit-learn # Good for general utilities
+
+# Data Handling
+tf-keras
+numpy
 pandas
 kagglehub
-torchvision
-boto3
-pyinstaller
-nuitka
-evaluate
-rouge_score
+
+# Web Serving
+fastapi
+uvicorn
+
+# MLOps & Utilities
+mlflow
+python-dotenv
+evaluate # For evaluation metrics
+rouge_score # Specifically for ROUGE metric calculations
+pydantic # Dependency for FastAPI
+boto3 # For AWS interactions, keep for future deployment
+accelerate # Useful for distributed training, keep
+dagshub
+
+# Optional but potentially useful (if you know you'll use them)
+pylint # For linting
+# pyinstaller # For packaging applications, not directly for the ML pipeline itself
+# nuitka # For compiling Python to C, similar to pyinstaller, not directly for the ML pipeline itself
+
+# Remove PyTorch specific dependencies
+# torch
+# torchvision

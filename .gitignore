@@ -3,6 +3,7 @@ __pycache__/
 .idea/
 .vscode/
 venv/
+venv_tf/
 generated-text.txt
 
 MODELS/*
